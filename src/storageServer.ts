@@ -12,10 +12,6 @@ import {
 
 await isReady;
 
-// TODO save this persistently
-const serverPrivateKey = PrivateKey.random();
-const serverPublicKey = serverPrivateKey.toPublicKey();
-
 const app = express();
 const port = 3001;
 
@@ -23,20 +19,25 @@ app.use(express.json());
 
 // ==============================================================================
 
-// TODO switch to something persistent
 type data_obj_map = {
   [root: string]: { rootNumber: BigInt; items: Array<[number, string[]]> };
 };
+
+// TODO save this persistently
 const database: {
   [zkAppAddress: string]: { nextNumber: number; root2data: data_obj_map };
 } = {};
+
+// TODO save this persistently
+const serverPrivateKey = PrivateKey.random();
+const serverPublicKey = serverPrivateKey.toPublicKey();
 
 // ==============================================================================
 
 (async () => {
   for (;;) {
     for (let zkAppAddress in database) {
-      // fetch the account and its root number. root number must be stored in slot 1!
+      // TODO fetch the account and its root number. root number must be stored in slot 1!
       let accountRootNumber = BigInt(0);
       var root2data = database[zkAppAddress].root2data;
       database[zkAppAddress].root2data = {};
@@ -50,8 +51,6 @@ const database: {
     await new Promise((resolve) => setTimeout(resolve, 60000));
   }
 })();
-
-// TODO add cleanup
 
 // ==============================================================================
 
@@ -124,3 +123,5 @@ app.get('/public_key', (req, res) => {
 app.listen(port, () =>
   console.log(`Storage Server listening on port ${port}!`)
 );
+
+// ==============================================================================
