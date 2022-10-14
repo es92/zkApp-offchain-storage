@@ -20,7 +20,7 @@ let transactionFee = 10_000_000;
 
   console.log('SnarkyJS loaded');
 
-  const useLocalBlockchain = true;
+  const useLocalBlockchain = false;
 
   const Local = Mina.LocalBlockchain();
   if (useLocalBlockchain) {
