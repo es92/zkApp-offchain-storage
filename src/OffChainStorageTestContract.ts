@@ -69,7 +69,6 @@ export class OffChainStorageTestContract extends SmartContract {
 
     const updates = [
       {
-        root,
         leaf,
         leafIsEmpty,
         newLeaf,
@@ -81,6 +80,7 @@ export class OffChainStorageTestContract extends SmartContract {
     assertRootUpdateValid(
       serverPublicKey,
       rootNumber,
+      root,
       updates,
       storedNewRoot,
       storedNewRootNumber,

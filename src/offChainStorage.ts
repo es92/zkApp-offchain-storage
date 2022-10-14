@@ -15,20 +15,17 @@ class MerkleWitness extends Experimental.MerkleWitness(8) {}
 // ==============================================================================
 
 type Update = {
-  root: Field;
-
   leaf: Field[];
   leafIsEmpty: Bool;
-
   newLeaf: Field[];
   newLeafIsEmpty: Bool;
-
   leafWitness: MerkleWitness;
 };
 
 export const assertRootUpdateValid = (
   serverPublicKey: PublicKey,
   rootNumber: Field,
+  root: Field,
   updates: Update[],
   storedNewRoot: Field,
   storedNewRootNumber: Field,
@@ -36,15 +33,14 @@ export const assertRootUpdateValid = (
 ) => {
   let empty_leaf = Field.fromNumber(0);
 
-  var currentRoot = updates[0].root;
+  var currentRoot = root;
   for (var i = 0; i < updates.length; i++) {
-    const { root, leaf, leafIsEmpty, newLeaf, newLeafIsEmpty, leafWitness } =
+    const { leaf, leafIsEmpty, newLeaf, newLeafIsEmpty, leafWitness } =
       updates[i];
-    currentRoot.assertEquals(root);
 
     // check the root is starting from the correct state
     let leafHash = Circuit.if(leafIsEmpty, empty_leaf, Poseidon.hash(leaf));
-    leafWitness.calculateRoot(leafHash).assertEquals(root);
+    leafWitness.calculateRoot(leafHash).assertEquals(currentRoot);
 
     // calculate the new root after setting the leaf
     let newLeafHash = Circuit.if(
