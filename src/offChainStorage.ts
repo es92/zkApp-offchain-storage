@@ -14,28 +14,49 @@ class MerkleWitness extends Experimental.MerkleWitness(8) {}
 
 // ==============================================================================
 
+type Update = {
+  root: Field;
+
+  leaf: Field[];
+  leafIsEmpty: Bool;
+
+  newLeaf: Field[];
+  newLeafIsEmpty: Bool;
+
+  leafWitness: MerkleWitness;
+};
+
 export const assertRootUpdateValid = (
   serverPublicKey: PublicKey,
-  root: Field,
   rootNumber: Field,
-  leaf: Field[],
-  leafIsEmpty: Bool,
-  leafWitness: MerkleWitness,
-  newLeaf: Field[],
+  updates: Update[],
   storedNewRoot: Field,
   storedNewRootNumber: Field,
   storedNewRootSignature: Signature
 ) => {
-  // check the root is starting from the correct state
   let empty_leaf = Field.fromNumber(0);
-  let leafHash = Circuit.if(leafIsEmpty, empty_leaf, Poseidon.hash(leaf));
-  leafWitness.calculateRoot(leafHash).assertEquals(root);
 
-  // calculate the new root after setting the leaf
-  let newRoot = leafWitness.calculateRoot(Poseidon.hash(newLeaf));
+  var currentRoot = updates[0].root;
+  for (var i = 0; i < updates.length; i++) {
+    const { root, leaf, leafIsEmpty, newLeaf, newLeafIsEmpty, leafWitness } =
+      updates[i];
+    currentRoot.assertEquals(root);
+
+    // check the root is starting from the correct state
+    let leafHash = Circuit.if(leafIsEmpty, empty_leaf, Poseidon.hash(leaf));
+    leafWitness.calculateRoot(leafHash).assertEquals(root);
+
+    // calculate the new root after setting the leaf
+    let newLeafHash = Circuit.if(
+      newLeafIsEmpty,
+      empty_leaf,
+      Poseidon.hash(newLeaf)
+    );
+    currentRoot = leafWitness.calculateRoot(newLeafHash);
+  }
 
   // check the new root is the one that the server has stored
-  newRoot.assertEquals(storedNewRoot);
+  currentRoot.assertEquals(storedNewRoot);
 
   // check the server is storing the stored new root
   storedNewRootSignature

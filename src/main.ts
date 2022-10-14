@@ -1,7 +1,6 @@
 import { OffChainStorageTestContract } from './OffChainStorageTestContract.js';
 import {
   isReady,
-  shutdown,
   Field,
   Mina,
   PrivateKey,
@@ -21,7 +20,7 @@ let transactionFee = 10_000_000;
 
   console.log('SnarkyJS loaded');
 
-  const useLocalBlockchain = false;
+  const useLocalBlockchain = true;
 
   const Local = Mina.LocalBlockchain();
   if (useLocalBlockchain) {
@@ -163,7 +162,9 @@ let transactionFee = 10_000_000;
 
     // ----------------------------------------------------
 
-    await fetchAccount({ publicKey: deployerAccount.toPublicKey() });
+    if (!useLocalBlockchain) {
+      await fetchAccount({ publicKey: deployerAccount.toPublicKey() });
+    }
     const txn1 = await Mina.transaction(
       { feePayerKey: deployerAccount, fee: transactionFee },
       () => {
@@ -227,12 +228,14 @@ let transactionFee = 10_000_000;
     return root2;
   };
 
-  let root2 = await make_transaction(root);
-  await make_transaction(root2);
+  let nextRoot = root;
+  for (;;) {
+    nextRoot = await make_transaction(nextRoot);
+  }
 
   // ----------------------------------------------------
 
-  console.log('Shutting down');
+  // console.log('Shutting down');
 
-  await shutdown();
+  // await shutdown();
 })();

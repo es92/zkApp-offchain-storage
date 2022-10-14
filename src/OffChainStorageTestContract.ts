@@ -67,14 +67,21 @@ export class OffChainStorageTestContract extends SmartContract {
     // newLeaf can be a function of the existing leaf
     newLeaf[0].assertGt(leaf[0]);
 
+    const updates = [
+      {
+        root,
+        leaf,
+        leafIsEmpty,
+        newLeaf,
+        newLeafIsEmpty: Bool(false),
+        leafWitness: path,
+      },
+    ];
+
     assertRootUpdateValid(
       serverPublicKey,
-      root,
       rootNumber,
-      leaf,
-      leafIsEmpty,
-      path,
-      newLeaf,
+      updates,
       storedNewRoot,
       storedNewRootNumber,
       storedNewRootSignature
