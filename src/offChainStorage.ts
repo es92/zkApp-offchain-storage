@@ -1,0 +1,135 @@
+import {
+  Poseidon,
+  Field,
+  Bool,
+  Experimental,
+  Signature,
+  PublicKey,
+  Circuit,
+} from 'snarkyjs';
+
+import { XMLHttpRequest } from 'xmlhttprequest-ts';
+
+class MerkleWitness extends Experimental.MerkleWitness(8) {}
+
+// ==============================================================================
+
+export const assertRootUpdateValid = (
+  serverPublicKey: PublicKey,
+  root: Field,
+  rootNumber: Field,
+  leaf: Field[],
+  leafIsEmpty: Bool,
+  leafWitness: MerkleWitness,
+  newLeaf: Field[],
+  storedNewRoot: Field,
+  storedNewRootNumber: Field,
+  storedNewRootSignature: Signature
+) => {
+  // check the root is starting from the correct state
+  let empty_leaf = Field.fromNumber(0);
+  let leafHash = Circuit.if(leafIsEmpty, empty_leaf, Poseidon.hash(leaf));
+  leafWitness.calculateRoot(leafHash).assertEquals(root);
+
+  // calculate the new root after setting the leaf
+  let newRoot = leafWitness.calculateRoot(Poseidon.hash(newLeaf));
+
+  // check the new root is the one that the server has stored
+  newRoot.assertEquals(storedNewRoot);
+
+  // check the server is storing the stored new root
+  storedNewRootSignature
+    .verify(serverPublicKey, [storedNewRoot, storedNewRootNumber])
+    .assertTrue();
+  rootNumber.assertLt(storedNewRootNumber);
+};
+
+// ==============================================================================
+
+export const get = (
+  serverAddress: string,
+  zkAppAddress: PublicKey,
+  height: number,
+  root: Field
+) => {
+  const idx2fields = new Map<number, Field[]>();
+
+  const tree = new Experimental.MerkleTree(height);
+  if (tree.getRoot().equals(root)) {
+    return idx2fields;
+  }
+
+  const xhttp = new XMLHttpRequest();
+
+  xhttp.open('GET', serverAddress + '/data', false);
+  xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+  xhttp.send(
+    JSON.stringify({
+      zkAppAddress: zkAppAddress.toBase58(),
+      root: root.toString(),
+    })
+  );
+
+  const items: Array<[number, string[]]> = JSON.parse(xhttp.responseText);
+  const fieldItems: Array<[number, Field[]]> = items.map(([idx, strs]) => [
+    idx,
+    strs.map((s) => Field.fromString(s)),
+  ]);
+
+  fieldItems.forEach(([index, fields]) => {
+    idx2fields.set(index, fields);
+  });
+
+  return idx2fields;
+};
+
+// ==============================================================================
+
+export const request_store = (
+  serverAddress: string,
+  zkAppAddress: PublicKey,
+  height: number,
+  idx2fields: Map<number, Field[]>
+): [Field, Signature] => {
+  const xhttp = new XMLHttpRequest();
+
+  const items = [];
+
+  for (let [idx, fields] of idx2fields) {
+    items.push([idx, fields.map((f) => f.toString())]);
+  }
+
+  xhttp.open('POST', serverAddress + '/data', false);
+  xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+  xhttp.send(
+    JSON.stringify({
+      zkAppAddress: zkAppAddress.toBase58(),
+      items,
+      height,
+    })
+  );
+
+  const result: [string, string[]] = JSON.parse(xhttp.responseText);
+  const newRootNumber = Field.fromString(result[0]);
+  const newRootSignature = Signature.ofFields(
+    result[1].map((s) => Field.fromString(s))
+  );
+  return [newRootNumber, newRootSignature];
+};
+
+// ==============================================================================
+
+export const get_public_key = (serverAddress: string) => {
+  const xhttp = new XMLHttpRequest();
+
+  xhttp.open('GET', serverAddress + '/public_key', false);
+  xhttp.send();
+
+  const publicKey = PublicKey.fromBase58(xhttp.responseText);
+
+  return publicKey;
+};
+
+// ==============================================================================
+
+export default { get_public_key, get, request_store, assertRootUpdateValid };

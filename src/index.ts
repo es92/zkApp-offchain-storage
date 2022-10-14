@@ -1,3 +1,3 @@
-import { Add } from './Add.js';
+import { OffChainStorageTestContract } from './OffChainStorageTestContract.js';
 
-export { Add };
+export { OffChainStorageTestContract };
