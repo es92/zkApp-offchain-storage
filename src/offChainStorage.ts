@@ -55,22 +55,26 @@ export const get = (
   const idx2fields = new Map<number, Field[]>();
 
   const tree = new Experimental.MerkleTree(height);
-  if (tree.getRoot().equals(root)) {
+  if (tree.getRoot().equals(root).toBoolean()) {
     return idx2fields;
   }
 
   const xhttp = new XMLHttpRequest();
 
-  xhttp.open('GET', serverAddress + '/data', false);
-  xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-  xhttp.send(
-    JSON.stringify({
-      zkAppAddress: zkAppAddress.toBase58(),
-      root: root.toString(),
-    })
-  );
+  var params =
+    'zkAppAddress=' + zkAppAddress.toBase58() + '&root=' + root.toString();
 
-  const items: Array<[number, string[]]> = JSON.parse(xhttp.responseText);
+  xhttp.open('GET', serverAddress + '/data?' + params, false);
+  xhttp.send();
+
+  const data = JSON.parse(xhttp.responseText);
+  if (data.unaudited) {
+    console.log(
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+    );
+  }
+
+  const items: Array<[number, string[]]> = data.items;
   const fieldItems: Array<[number, Field[]]> = items.map(([idx, strs]) => [
     idx,
     strs.map((s) => Field.fromString(s)),
@@ -109,7 +113,15 @@ export const request_store = (
     })
   );
 
-  const result: [string, string[]] = JSON.parse(xhttp.responseText);
+  const data = JSON.parse(xhttp.responseText);
+  if (data.unaudited) {
+    console.log(
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+    );
+  }
+
+  const result: [string, string[]] = data.result;
+
   const newRootNumber = Field.fromString(result[0]);
   const newRootSignature = Signature.ofFields(
     result[1].map((s) => Field.fromString(s))
@@ -125,7 +137,14 @@ export const get_public_key = (serverAddress: string) => {
   xhttp.open('GET', serverAddress + '/public_key', false);
   xhttp.send();
 
-  const publicKey = PublicKey.fromBase58(xhttp.responseText);
+  const data = JSON.parse(xhttp.responseText);
+  if (data.unaudited) {
+    console.log(
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+    );
+  }
+
+  const publicKey = PublicKey.fromBase58(data.serverPublicKey58);
 
   return publicKey;
 };

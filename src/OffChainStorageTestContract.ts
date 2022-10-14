@@ -30,8 +30,8 @@ export class OffChainStorageTestContract extends SmartContract {
     });
   }
 
-  @method init(height: Field, serverPublicKey: PublicKey) {
-    const tree = new Experimental.MerkleTree(parseInt(height.toString())); // TODO this doesn't seem right...
+  @method init(serverPublicKey: PublicKey) {
+    const tree = new Experimental.MerkleTree(4); // TODO what is the right way to set this dynamically?
     const root = tree.getRoot();
     root.assertEquals(root); // is this really the right way to ensure the init is an empty tree?
     this.root.set(root);
@@ -79,6 +79,7 @@ export class OffChainStorageTestContract extends SmartContract {
       storedNewRootNumber,
       storedNewRootSignature
     );
+
     this.root.set(storedNewRoot);
     this.rootNumber.set(storedNewRootNumber);
   }
