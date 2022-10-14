@@ -81,6 +81,8 @@ console.log('Server using public key', serverPublicKey.toBase58());
 
 (async () => {
   for (;;) {
+    console.log('running cleanup');
+
     for (let zkAppAddress in database) {
       let response = await fetchAccount({
         publicKey: PublicKey.fromBase58(zkAppAddress),
@@ -90,6 +92,7 @@ console.log('Server using public key', serverPublicKey.toBase58());
         let accountRootNumber = accountRootNumberF.toBigInt();
         var root2data = database[zkAppAddress].root2data;
         database[zkAppAddress].root2data = {};
+        console.log('cleaning up', zkAppAddress);
         for (let root in root2data) {
           if (root2data[root].rootNumber >= accountRootNumber) {
             database[zkAppAddress].root2data[root] = root2data[root];
