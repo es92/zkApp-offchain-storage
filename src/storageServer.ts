@@ -21,15 +21,37 @@ const port = 3001;
 
 app.use(express.json());
 
-// TODO add cleanup
-
 // ==============================================================================
 
 // TODO switch to something persistent
-type data_obj_map = { [root: string]: Array<[number, string[]]> };
+type data_obj_map = {
+  [root: string]: { rootNumber: BigInt; items: Array<[number, string[]]> };
+};
 const database: {
   [zkAppAddress: string]: { nextNumber: number; root2data: data_obj_map };
 } = {};
+
+// ==============================================================================
+
+(async () => {
+  for (;;) {
+    for (let zkAppAddress in database) {
+      // fetch the account and its root number. root number must be stored in slot 1!
+      let accountRootNumber = BigInt(0);
+      var root2data = database[zkAppAddress].root2data;
+      database[zkAppAddress].root2data = {};
+      for (let root in root2data) {
+        if (root2data[root].rootNumber >= accountRootNumber) {
+          database[zkAppAddress].root2data[root] = root2data[root];
+        }
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 60000));
+  }
+})();
+
+// TODO add cleanup
 
 // ==============================================================================
 
@@ -66,7 +88,10 @@ app.post('/data', (req, res) => {
   const newRootNumber = Field.fromNumber(database[zkAppAddress58].nextNumber);
 
   database[zkAppAddress58].nextNumber += 1;
-  database[zkAppAddress58].root2data[newRoot.toString()] = items;
+  database[zkAppAddress58].root2data[newRoot.toString()] = {
+    rootNumber: newRootNumber.toBigInt(),
+    items,
+  };
 
   let newRootSignature = Signature.create(serverPrivateKey, [
     newRoot,
