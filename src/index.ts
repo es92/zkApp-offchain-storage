@@ -1,3 +1,23 @@
-import { OffChainStorageTestContract } from './OffChainStorageTestContract.js';
+import {
+  MerkleWitness8,
+  Update,
+  assertRootUpdateValid,
+  get,
+  requestStore,
+  getPublicKey,
+  makeRequest,
+  mapToTree,
+} from './offChainStorage.js';
 
-export { OffChainStorageTestContract };
+export type { Update };
+
+const OffChainStorage = {
+  assertRootUpdateValid,
+  get,
+  requestStore,
+  getPublicKey,
+  makeRequest,
+  mapToTree,
+};
+
+export { OffChainStorage, MerkleWitness8 };

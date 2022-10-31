@@ -11,7 +11,11 @@ import {
   Bool,
 } from 'snarkyjs';
 
-import offChainStorage from './offChainStorage.js';
+import { OffChainStorage } from './index.js';
+
+import XMLHttpRequestTs from 'xmlhttprequest-ts';
+const NodeXMLHttpRequest =
+  XMLHttpRequestTs.XMLHttpRequest as any as typeof XMLHttpRequest;
 
 let transactionFee = 10_000_000;
 
@@ -20,7 +24,7 @@ let transactionFee = 10_000_000;
 
   console.log('SnarkyJS loaded');
 
-  const useLocalBlockchain = false;
+  const useLocalBlockchain = true;
 
   const Local = Mina.LocalBlockchain();
   if (useLocalBlockchain) {
@@ -63,7 +67,10 @@ let transactionFee = 10_000_000;
 
   const serverAddress = 'http://localhost:3001';
 
-  const serverPublicKey = offChainStorage.get_public_key(serverAddress);
+  const serverPublicKey = await OffChainStorage.getPublicKey(
+    serverAddress,
+    NodeXMLHttpRequest
+  );
 
   if (!useLocalBlockchain) {
     console.log('Compiling smart contract...');
@@ -127,11 +134,12 @@ let transactionFee = 10_000_000;
   const make_transaction = async (root: Field) => {
     const tree = new Experimental.MerkleTree(height);
 
-    const idx2fields = offChainStorage.get(
+    const idx2fields = await OffChainStorage.get(
       serverAddress,
       zkAppAccount,
       height,
-      root
+      root,
+      NodeXMLHttpRequest
     );
     for (let [idx, fields] of idx2fields) {
       tree.setLeaf(BigInt(idx), Poseidon.hash(fields));
@@ -153,12 +161,14 @@ let transactionFee = 10_000_000;
     console.log('root from ', zkAppInstance.root.get().toString());
 
     idx2fields.set(index, [newNum]);
-    const [newRootNumber, newRootSignature] = offChainStorage.request_store(
-      serverAddress,
-      zkAppAccount,
-      height,
-      idx2fields
-    );
+    const [newRootNumber, newRootSignature] =
+      await OffChainStorage.requestStore(
+        serverAddress,
+        zkAppAccount,
+        height,
+        idx2fields,
+        NodeXMLHttpRequest
+      );
 
     // ----------------------------------------------------
 

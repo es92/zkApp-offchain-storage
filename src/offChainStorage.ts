@@ -8,18 +8,16 @@ import {
   Circuit,
 } from 'snarkyjs';
 
-import { XMLHttpRequest } from 'xmlhttprequest-ts';
-
-class MerkleWitness extends Experimental.MerkleWitness(8) {}
+export class MerkleWitness8 extends Experimental.MerkleWitness(8) {}
 
 // ==============================================================================
 
-type Update = {
+export type Update = {
   leaf: Field[];
   leafIsEmpty: Bool;
   newLeaf: Field[];
   newLeafIsEmpty: Bool;
-  leafWitness: MerkleWitness;
+  leafWitness: MerkleWitness8;
 };
 
 export const assertRootUpdateValid = (
@@ -27,11 +25,10 @@ export const assertRootUpdateValid = (
   rootNumber: Field,
   root: Field,
   updates: Update[],
-  storedNewRoot: Field,
   storedNewRootNumber: Field,
   storedNewRootSignature: Signature
 ) => {
-  let empty_leaf = Field.fromNumber(0);
+  let emptyLeaf = Field.fromNumber(0);
 
   var currentRoot = root;
   for (var i = 0; i < updates.length; i++) {
@@ -39,35 +36,37 @@ export const assertRootUpdateValid = (
       updates[i];
 
     // check the root is starting from the correct state
-    let leafHash = Circuit.if(leafIsEmpty, empty_leaf, Poseidon.hash(leaf));
+    let leafHash = Circuit.if(leafIsEmpty, emptyLeaf, Poseidon.hash(leaf));
     leafWitness.calculateRoot(leafHash).assertEquals(currentRoot);
 
     // calculate the new root after setting the leaf
     let newLeafHash = Circuit.if(
       newLeafIsEmpty,
-      empty_leaf,
+      emptyLeaf,
       Poseidon.hash(newLeaf)
     );
     currentRoot = leafWitness.calculateRoot(newLeafHash);
   }
 
-  // check the new root is the one that the server has stored
-  currentRoot.assertEquals(storedNewRoot);
+  const storedNewRoot = currentRoot;
 
   // check the server is storing the stored new root
   storedNewRootSignature
     .verify(serverPublicKey, [storedNewRoot, storedNewRootNumber])
     .assertTrue();
   rootNumber.assertLt(storedNewRootNumber);
+
+  return storedNewRoot;
 };
 
 // ==============================================================================
 
-export const get = (
+export const get = async (
   serverAddress: string,
   zkAppAddress: PublicKey,
   height: number,
-  root: Field
+  root: Field,
+  UserXMLHttpRequest: typeof XMLHttpRequest | null = null
 ) => {
   const idx2fields = new Map<number, Field[]>();
 
@@ -76,18 +75,20 @@ export const get = (
     return idx2fields;
   }
 
-  const xhttp = new XMLHttpRequest();
-
   var params =
     'zkAppAddress=' + zkAppAddress.toBase58() + '&root=' + root.toString();
 
-  xhttp.open('GET', serverAddress + '/data?' + params, false);
-  xhttp.send();
+  const response = await makeRequest(
+    'GET',
+    serverAddress + '/data?' + params,
+    null,
+    UserXMLHttpRequest
+  );
 
-  const data = JSON.parse(xhttp.responseText);
+  const data = JSON.parse(response);
   if (data.unaudited) {
     console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
     );
   }
 
@@ -106,34 +107,34 @@ export const get = (
 
 // ==============================================================================
 
-export const request_store = (
+export const requestStore = async (
   serverAddress: string,
   zkAppAddress: PublicKey,
   height: number,
-  idx2fields: Map<number, Field[]>
-): [Field, Signature] => {
-  const xhttp = new XMLHttpRequest();
-
+  idx2fields: Map<number, Field[]>,
+  UserXMLHttpRequest: typeof XMLHttpRequest | null = null
+): Promise<[Field, Signature]> => {
   const items = [];
 
   for (let [idx, fields] of idx2fields) {
     items.push([idx, fields.map((f) => f.toString())]);
   }
 
-  xhttp.open('POST', serverAddress + '/data', false);
-  xhttp.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-  xhttp.send(
+  const response = await makeRequest(
+    'POST',
+    serverAddress + '/data',
     JSON.stringify({
       zkAppAddress: zkAppAddress.toBase58(),
       items,
       height,
-    })
+    }),
+    UserXMLHttpRequest
   );
 
-  const data = JSON.parse(xhttp.responseText);
+  const data = JSON.parse(response);
   if (data.unaudited) {
     console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
     );
   }
 
@@ -148,16 +149,21 @@ export const request_store = (
 
 // ==============================================================================
 
-export const get_public_key = (serverAddress: string) => {
-  const xhttp = new XMLHttpRequest();
+export const getPublicKey = async (
+  serverAddress: string,
+  UserXMLHttpRequest: typeof XMLHttpRequest | null = null
+) => {
+  const response = await makeRequest(
+    'GET',
+    serverAddress + '/publicKey',
+    null,
+    UserXMLHttpRequest
+  );
 
-  xhttp.open('GET', serverAddress + '/public_key', false);
-  xhttp.send();
-
-  const data = JSON.parse(xhttp.responseText);
+  const data = JSON.parse(response);
   if (data.unaudited) {
     console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. TO NOT BE USED IN PRODUCTION'
+      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
     );
   }
 
@@ -168,4 +174,51 @@ export const get_public_key = (serverAddress: string) => {
 
 // ==============================================================================
 
-export default { get_public_key, get, request_store, assertRootUpdateValid };
+export function makeRequest(
+  method: string,
+  url: string,
+  data: string | null = null,
+  UserXMLHttpRequest: typeof XMLHttpRequest | null = null
+): Promise<string> {
+  return new Promise(function (resolve, reject) {
+    let xhr: XMLHttpRequest;
+    if (UserXMLHttpRequest != null) {
+      xhr = new UserXMLHttpRequest();
+    } else {
+      xhr = new XMLHttpRequest();
+    }
+    xhr.open(method, url);
+    xhr.onload = function () {
+      if (this.status >= 200 && this.status < 300) {
+        resolve(xhr.responseText);
+      } else {
+        reject({
+          status: this.status,
+          statusText: xhr.statusText,
+        });
+      }
+    };
+    xhr.onerror = function () {
+      reject({
+        status: this.status,
+        statusText: xhr.statusText,
+      });
+    };
+    if (data != null) {
+      xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    }
+    xhr.send(data);
+  });
+}
+
+// ==============================================================================
+
+export function mapToTree(height: number, idx2fields: Map<number, Field[]>) {
+  const tree = new Experimental.MerkleTree(height);
+  for (let [k, fields] of idx2fields) {
+    tree.setLeaf(BigInt(k), Poseidon.hash(fields));
+  }
+  return tree;
+}
+
+// ==============================================================================

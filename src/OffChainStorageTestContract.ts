@@ -48,7 +48,7 @@ export class OffChainStorageTestContract extends SmartContract {
     oldNum: Field,
     num: Field,
     path: MerkleWitness,
-    storedNewRoot: Field,
+    storedNewRoot__: Field,
     storedNewRootNumber: Field,
     storedNewRootSignature: Signature
   ) {
@@ -77,12 +77,11 @@ export class OffChainStorageTestContract extends SmartContract {
       },
     ];
 
-    assertRootUpdateValid(
+    const storedNewRoot = assertRootUpdateValid(
       serverPublicKey,
       rootNumber,
       root,
       updates,
-      storedNewRoot,
       storedNewRootNumber,
       storedNewRootSignature
     );

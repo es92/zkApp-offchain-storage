@@ -1,5 +1,6 @@
 //const cors = require('cors');
 import express from 'express';
+import cors from 'cors';
 import fs from 'fs';
 
 import {
@@ -21,9 +22,12 @@ console.log('THIS IS A REFERENCE IMPLEMENTATION. NOT TO BE USED IN PRODUCTION');
 const app = express();
 const port = 3001;
 
+app.use(cors());
 app.use(express.json());
 
 // ==============================================================================
+
+const maxHeight = 30;
 
 const useLocalBlockchain = false;
 
@@ -138,9 +142,11 @@ app.post('/data', (req, res) => {
     tree.setLeaf(BigInt(idx), Poseidon.hash(fields));
   }
 
-  if (height > 8) {
+  if (height > maxHeight) {
     res.send(
-      'height is too large. A max height of 8 is supported for this implementation'
+      'height is too large. A max height of ' +
+        maxHeight +
+        ' is supported for this implementation'
     ); // TODO make this a proper error
     return;
   }
@@ -216,7 +222,7 @@ app.get('/data', (req, res) => {
 
 // ==============================================================================
 
-app.get('/public_key', (req, res) => {
+app.get('/publicKey', (req, res) => {
   res.json({
     serverPublicKey58: serverPublicKey.toBase58(),
     unaudited: true,
