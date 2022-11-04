@@ -213,10 +213,10 @@ export function makeRequest(
 
 // ==============================================================================
 
-export function mapToTree(height: number, idx2fields: Map<number, Field[]>) {
+export function mapToTree(height: number, idx2fields: Map<bigint, Field[]>) {
   const tree = new Experimental.MerkleTree(height);
   for (let [k, fields] of idx2fields) {
-    tree.setLeaf(BigInt(k), Poseidon.hash(fields));
+    tree.setLeaf(k, Poseidon.hash(fields));
   }
   return tree;
 }
