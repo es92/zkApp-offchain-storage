@@ -1,5 +1,12 @@
 import {
+  MerkleWitness4,
   MerkleWitness8,
+  MerkleWitness16,
+  MerkleWitness24,
+  MerkleWitness32,
+  MerkleWitness64,
+  MerkleWitness128,
+  MerkleWitness256,
   Update,
   assertRootUpdateValid,
   get,
@@ -20,4 +27,14 @@ const OffChainStorage = {
   mapToTree,
 };
 
-export { OffChainStorage, MerkleWitness8 };
+export {
+  OffChainStorage,
+  MerkleWitness4,
+  MerkleWitness8,
+  MerkleWitness16,
+  MerkleWitness24,
+  MerkleWitness32,
+  MerkleWitness64,
+  MerkleWitness128,
+  MerkleWitness256,
+};

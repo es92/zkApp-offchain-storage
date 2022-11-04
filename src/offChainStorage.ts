@@ -8,7 +8,14 @@ import {
   Circuit,
 } from 'snarkyjs';
 
+export class MerkleWitness4 extends Experimental.MerkleWitness(4) {}
 export class MerkleWitness8 extends Experimental.MerkleWitness(8) {}
+export class MerkleWitness16 extends Experimental.MerkleWitness(16) {}
+export class MerkleWitness24 extends Experimental.MerkleWitness(24) {}
+export class MerkleWitness32 extends Experimental.MerkleWitness(32) {}
+export class MerkleWitness64 extends Experimental.MerkleWitness(64) {}
+export class MerkleWitness128 extends Experimental.MerkleWitness(128) {}
+export class MerkleWitness256 extends Experimental.MerkleWitness(256) {}
 
 // ==============================================================================
 
