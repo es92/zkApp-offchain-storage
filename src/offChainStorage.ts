@@ -80,7 +80,7 @@ export const get = async (
   root: Field,
   UserXMLHttpRequest: typeof XMLHttpRequest | null = null
 ) => {
-  const idx2fields = new Map<number, Field[]>();
+  const idx2fields = new Map<bigint, Field[]>();
 
   const tree = new Experimental.MerkleTree(height);
   if (tree.getRoot().equals(root).toBoolean()) {
@@ -100,14 +100,14 @@ export const get = async (
   const data = JSON.parse(response);
   printCaution();
 
-  const items: Array<[number, string[]]> = data.items;
-  const fieldItems: Array<[number, Field[]]> = items.map(([idx, strs]) => [
+  const items: Array<[string, string[]]> = data.items;
+  const fieldItems: Array<[string, Field[]]> = items.map(([idx, strs]) => [
     idx,
     strs.map((s) => Field.fromString(s)),
   ]);
 
   fieldItems.forEach(([index, fields]) => {
-    idx2fields.set(index, fields);
+    idx2fields.set(BigInt(index), fields);
   });
 
   return idx2fields;
@@ -119,7 +119,7 @@ export const requestStore = async (
   serverAddress: string,
   zkAppAddress: PublicKey,
   height: number,
-  idx2fields: Map<number, Field[]>,
+  idx2fields: Map<bigint, Field[]>,
   UserXMLHttpRequest: typeof XMLHttpRequest | null = null
 ): Promise<[Field, Signature]> => {
   const items = [];
