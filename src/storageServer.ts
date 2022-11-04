@@ -17,7 +17,9 @@ import {
 
 await isReady;
 
-console.log('THIS IS A REFERENCE IMPLEMENTATION. NOT TO BE USED IN PRODUCTION');
+console.log(
+  'CAUTION: This project is in development and not to be relied upon to guarantee storage in production environments.'
+);
 
 const app = express();
 const port = 3001;
@@ -46,7 +48,7 @@ const saveFile = 'database.json';
 // ==============================================================================
 
 type data_obj_map = {
-  [root: string]: { rootNumber: number; items: Array<[number, string[]]> };
+  [root: string]: { rootNumber: number; items: Array<[bigint, string[]]> };
 };
 
 let database: {
@@ -122,15 +124,15 @@ console.log('Server using public key', serverPublicKey.toBase58());
 
 app.post('/data', (req, res) => {
   const height: number = req.body.height;
-  const items: Array<[number, string[]]> = req.body.items;
+  const items: Array<[bigint, string[]]> = req.body.items;
   const zkAppAddress58: string = req.body.zkAppAddress;
 
-  const fieldItems: Array<[number, Field[]]> = items.map(([idx, strs]) => [
+  const fieldItems: Array<[bigint, Field[]]> = items.map(([idx, strs]) => [
     idx,
     strs.map((s) => Field.fromString(s)),
   ]);
 
-  const idx2fields = new Map<number, Field[]>();
+  const idx2fields = new Map<bigint, Field[]>();
 
   fieldItems.forEach(([index, fields]) => {
     idx2fields.set(index, fields);
@@ -143,16 +145,18 @@ app.post('/data', (req, res) => {
   }
 
   if (height > maxHeight) {
-    res.send(
-      'height is too large. A max height of ' +
-        maxHeight +
-        ' is supported for this implementation'
-    ); // TODO make this a proper error
+    res
+      .status(400)
+      .send(
+        'height is too large. A max height of ' +
+          maxHeight +
+          ' is supported for this implementation'
+      );
     return;
   }
 
   if (items.length > 2 ** (height - 1)) {
-    res.send('too many items for height'); // TODO make this a proper error
+    res.status(400).send('too many items for height');
     return;
   }
 
@@ -165,7 +169,7 @@ app.post('/data', (req, res) => {
   }
 
   if (database[zkAppAddress58].height != height) {
-    res.send('wrong height'); // TODO make this a proper error
+    res.status(400).send('wrong height');
     return;
   }
 
@@ -199,7 +203,6 @@ app.post('/data', (req, res) => {
       newRootNumber.toString(),
       newRootSignature.toFields().map((f) => f.toString()),
     ],
-    unaudited: true,
   });
 });
 
@@ -213,10 +216,9 @@ app.get('/data', (req, res) => {
     console.log('getting', zkAppAddress58, root);
     res.json({
       items: database[zkAppAddress58].root2data[root].items,
-      unaudited: true,
     });
   } else {
-    res.send('bad query parameters');
+    res.status(400).send('bad query parameters');
   }
 });
 
@@ -225,7 +227,6 @@ app.get('/data', (req, res) => {
 app.get('/publicKey', (req, res) => {
   res.json({
     serverPublicKey58: serverPublicKey.toBase58(),
-    unaudited: true,
   });
 });
 

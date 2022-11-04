@@ -13,6 +13,8 @@ import {
 
 import { OffChainStorage } from './index.js';
 
+import { height } from './OffChainStorageTestContract.js';
+
 import XMLHttpRequestTs from 'xmlhttprequest-ts';
 const NodeXMLHttpRequest =
   XMLHttpRequestTs.XMLHttpRequest as any as typeof XMLHttpRequest;
@@ -57,7 +59,6 @@ let transactionFee = 10_000_000;
 
   // ----------------------------------------------------
 
-  const height = 4;
   class MerkleWitness extends Experimental.MerkleWitness(height) {}
 
   // create a destination we will deploy the smart contract to
@@ -141,6 +142,7 @@ let transactionFee = 10_000_000;
       root,
       NodeXMLHttpRequest
     );
+
     for (let [idx, fields] of idx2fields) {
       tree.setLeaf(BigInt(idx), Poseidon.hash(fields));
     }
@@ -156,6 +158,15 @@ let transactionFee = 10_000_000;
     const circuitWitness = new MerkleWitness(witness);
     tree.setLeaf(BigInt(index), Poseidon.hash([newNum]));
     const newRoot = tree.getRoot();
+
+    console.log(
+      'updating',
+      index,
+      'from',
+      oldNum.toString(),
+      'to',
+      newNum.toString()
+    );
 
     console.log('updating to new root', newRoot.toString());
     console.log('root from ', zkAppInstance.root.get().toString());
@@ -248,4 +259,6 @@ let transactionFee = 10_000_000;
   // console.log('Shutting down');
 
   // await shutdown();
-})();
+})().catch((e) => {
+  console.log('error', e);
+});

@@ -12,6 +12,11 @@ export class MerkleWitness8 extends Experimental.MerkleWitness(8) {}
 
 // ==============================================================================
 
+const printCaution = () =>
+  console.log(
+    'CAUTION: This project is in development and not to be relied upon to guarantee storage in production environments.'
+  );
+
 export type Update = {
   leaf: Field[];
   leafIsEmpty: Bool;
@@ -86,11 +91,7 @@ export const get = async (
   );
 
   const data = JSON.parse(response);
-  if (data.unaudited) {
-    console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
-    );
-  }
+  printCaution();
 
   const items: Array<[number, string[]]> = data.items;
   const fieldItems: Array<[number, Field[]]> = items.map(([idx, strs]) => [
@@ -132,11 +133,7 @@ export const requestStore = async (
   );
 
   const data = JSON.parse(response);
-  if (data.unaudited) {
-    console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
-    );
-  }
+  printCaution();
 
   const result: [string, string[]] = data.result;
 
@@ -161,11 +158,7 @@ export const getPublicKey = async (
   );
 
   const data = JSON.parse(response);
-  if (data.unaudited) {
-    console.log(
-      'WARNING: SERVER IS A REFERENCE IMPLEMENTATION AND UNAUDITED. SHOULD NOT BE USED IN PRODUCTION'
-    );
-  }
+  printCaution();
 
   const publicKey = PublicKey.fromBase58(data.serverPublicKey58);
 
@@ -194,14 +187,14 @@ export function makeRequest(
       } else {
         reject({
           status: this.status,
-          statusText: xhr.statusText,
+          statusText: xhr.responseText,
         });
       }
     };
     xhr.onerror = function () {
       reject({
         status: this.status,
-        statusText: xhr.statusText,
+        statusText: xhr.responseText,
       });
     };
     if (data != null) {

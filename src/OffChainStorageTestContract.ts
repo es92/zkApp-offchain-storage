@@ -14,14 +14,15 @@ import {
 
 import { assertRootUpdateValid } from './offChainStorage.js';
 
-class MerkleWitness extends Experimental.MerkleWitness(8) {}
+export const height = 256;
+
+class MerkleWitness extends Experimental.MerkleWitness(height) {}
 
 export class OffChainStorageTestContract extends SmartContract {
   @state(Field) root = State<Field>();
   @state(Field) rootNumber = State<Field>();
   @state(PublicKey) serverPublicKey = State<PublicKey>();
 
-  // TODO should I be doing my init things inside deploy? does that assert them?
   deploy(args: DeployArgs) {
     super.deploy(args);
     this.setPermissions({
@@ -31,7 +32,7 @@ export class OffChainStorageTestContract extends SmartContract {
   }
 
   @method init(serverPublicKey: PublicKey) {
-    const tree = new Experimental.MerkleTree(8);
+    const tree = new Experimental.MerkleTree(height);
     const root = tree.getRoot();
     this.root.set(root);
 
