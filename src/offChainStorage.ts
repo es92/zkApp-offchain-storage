@@ -118,7 +118,7 @@ export const requestStore = async (
   const items = [];
 
   for (let [idx, fields] of idx2fields) {
-    items.push([idx, fields.map((f) => f.toString())]);
+    items.push([idx.toString(), fields.map((f) => f.toString())]);
   }
 
   const response = await makeRequest(

@@ -29,7 +29,7 @@ app.use(express.json());
 
 // ==============================================================================
 
-const maxHeight = 30;
+const maxHeight = 256;
 
 const useLocalBlockchain = false;
 
@@ -48,7 +48,7 @@ const saveFile = 'database.json';
 // ==============================================================================
 
 type data_obj_map = {
-  [root: string]: { rootNumber: number; items: Array<[bigint, string[]]> };
+  [root: string]: { rootNumber: number; items: Array<[string, string[]]> };
 };
 
 let database: {
@@ -124,11 +124,11 @@ console.log('Server using public key', serverPublicKey.toBase58());
 
 app.post('/data', (req, res) => {
   const height: number = req.body.height;
-  const items: Array<[bigint, string[]]> = req.body.items;
+  const items: Array<[string, string[]]> = req.body.items;
   const zkAppAddress58: string = req.body.zkAppAddress;
 
   const fieldItems: Array<[bigint, Field[]]> = items.map(([idx, strs]) => [
-    idx,
+    BigInt(idx),
     strs.map((s) => Field.fromString(s)),
   ]);
 

@@ -13,6 +13,8 @@ import {
 
 import { OffChainStorage } from './index.js';
 
+import random from 'random-bigint';
+
 import { height } from './OffChainStorageTestContract.js';
 
 import XMLHttpRequestTs from 'xmlhttprequest-ts';
@@ -147,7 +149,7 @@ let transactionFee = 10_000_000;
       tree.setLeaf(BigInt(idx), Poseidon.hash(fields));
     }
 
-    const index = Math.floor(Math.random() * 2 ** (height - 1));
+    const index = random(height - 1);
     const leafIsEmpty = Bool(!idx2fields.has(index));
 
     const oldNum = leafIsEmpty.toBoolean()
