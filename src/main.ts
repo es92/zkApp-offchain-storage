@@ -5,7 +5,8 @@ import {
   Mina,
   PrivateKey,
   AccountUpdate,
-  Experimental,
+  MerkleTree,
+  MerkleWitness,
   Poseidon,
   fetchAccount,
   Bool,
@@ -61,7 +62,7 @@ let transactionFee = 10_000_000;
 
   // ----------------------------------------------------
 
-  class MerkleWitness extends Experimental.MerkleWitness(height) {}
+  class OffchainStorageMerkleWitness extends MerkleWitness(height) {}
 
   // create a destination we will deploy the smart contract to
   const zkAppAccount = zkAppPrivateKey.toPublicKey();
@@ -80,8 +81,6 @@ let transactionFee = 10_000_000;
     await OffChainStorageTestContract.compile();
   }
 
-  const zkAppInstance = new OffChainStorageTestContract(zkAppAccount);
-
   let isDeployed = false;
   if (!useLocalBlockchain) {
     let response = await fetchAccount({ publicKey: zkAppAccount });
@@ -90,6 +89,8 @@ let transactionFee = 10_000_000;
     }
   }
 
+  const zkAppInstance = new OffChainStorageTestContract(zkAppAccount, serverPublicKey);
+
   if (!isDeployed) {
     console.log('Deploying zkapp...');
     const deploy_txn = await Mina.transaction(
@@ -97,7 +98,6 @@ let transactionFee = 10_000_000;
       () => {
         AccountUpdate.fundNewAccount(deployerAccount);
         zkAppInstance.deploy({ zkappKey: zkAppPrivateKey });
-        zkAppInstance.init(serverPublicKey);
         zkAppInstance.sign(zkAppPrivateKey);
       }
     );
@@ -135,7 +135,7 @@ let transactionFee = 10_000_000;
   console.log('state after init:', root.toString());
 
   const make_transaction = async (root: Field) => {
-    const tree = new Experimental.MerkleTree(height);
+    const tree = new MerkleTree(height);
 
     const idx2fields = await OffChainStorage.get(
       serverAddress,
@@ -153,11 +153,11 @@ let transactionFee = 10_000_000;
     const leafIsEmpty = Bool(!idx2fields.has(index));
 
     const oldNum = leafIsEmpty.toBoolean()
-      ? Field.fromNumber(0)
+      ? Field(0)
       : idx2fields.get(index)![0];
     const newNum = oldNum.add(1);
     const witness = tree.getWitness(BigInt(index));
-    const circuitWitness = new MerkleWitness(witness);
+    const circuitWitness = new OffchainStorageMerkleWitness(witness);
     tree.setLeaf(BigInt(index), Poseidon.hash([newNum]));
     const newRoot = tree.getRoot();
 

@@ -7,7 +7,7 @@ import {
   isReady,
   PrivateKey,
   Field,
-  Experimental,
+  MerkleTree,
   Poseidon,
   Signature,
   PublicKey,
@@ -129,7 +129,7 @@ app.post('/data', (req, res) => {
 
   const fieldItems: Array<[bigint, Field[]]> = items.map(([idx, strs]) => [
     BigInt(idx),
-    strs.map((s) => Field.fromString(s)),
+    strs.map((s) => Field.fromJSON(s)),
   ]);
 
   const idx2fields = new Map<bigint, Field[]>();
@@ -138,7 +138,7 @@ app.post('/data', (req, res) => {
     idx2fields.set(index, fields);
   });
 
-  const tree = new Experimental.MerkleTree(height);
+  const tree = new MerkleTree(height);
 
   for (let [idx, fields] of idx2fields) {
     tree.setLeaf(BigInt(idx), Poseidon.hash(fields));
@@ -174,7 +174,7 @@ app.post('/data', (req, res) => {
   }
 
   const newRoot = tree.getRoot();
-  const newRootNumber = Field.fromNumber(database[zkAppAddress58].nextNumber);
+  const newRootNumber = Field(database[zkAppAddress58].nextNumber);
 
   database[zkAppAddress58].nextNumber += 1;
   database[zkAppAddress58].root2data[newRoot.toString()] = {

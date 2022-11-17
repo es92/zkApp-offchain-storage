@@ -1,7 +1,8 @@
 import {
   SmartContract,
   Field,
-  Experimental,
+  MerkleTree,
+  MerkleWitness,
   state,
   State,
   method,
@@ -16,12 +17,19 @@ import { assertRootUpdateValid } from './offChainStorage.js';
 
 export const height = 256;
 
-class MerkleWitness extends Experimental.MerkleWitness(height) {}
+class OffchainStorageMerkleWitness extends MerkleWitness(height) {}
 
 export class OffChainStorageTestContract extends SmartContract {
   @state(Field) root = State<Field>();
   @state(Field) rootNumber = State<Field>();
   @state(PublicKey) serverPublicKey = State<PublicKey>();
+
+  _serverPublicKey: PublicKey;
+
+  constructor(zkAppAddress: PublicKey, serverPublicKey: PublicKey) {
+    super(zkAppAddress)
+    this._serverPublicKey = serverPublicKey;
+  }
 
   deploy(args: DeployArgs) {
     super.deploy(args);
@@ -29,24 +37,23 @@ export class OffChainStorageTestContract extends SmartContract {
       ...Permissions.default(),
       editState: Permissions.proofOrSignature(),
     });
-  }
 
-  @method init(serverPublicKey: PublicKey) {
-    const tree = new Experimental.MerkleTree(height);
+    const tree = new MerkleTree(height);
     const root = tree.getRoot();
     this.root.set(root);
 
-    const rootNumber = Field.fromNumber(0);
+    const rootNumber = Field(0);
     this.rootNumber.set(rootNumber);
 
-    this.serverPublicKey.set(serverPublicKey);
+    this.serverPublicKey.set(this._serverPublicKey);
+
   }
 
   @method update(
     leafIsEmpty: Bool,
     oldNum: Field,
     num: Field,
-    path: MerkleWitness,
+    path: OffchainStorageMerkleWitness,
     storedNewRoot__: Field,
     storedNewRootNumber: Field,
     storedNewRootSignature: Signature

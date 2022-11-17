@@ -2,20 +2,21 @@ import {
   Poseidon,
   Field,
   Bool,
-  Experimental,
+  MerkleTree,
+  MerkleWitness,
   Signature,
   PublicKey,
   Circuit,
 } from 'snarkyjs';
 
-export class MerkleWitness4 extends Experimental.MerkleWitness(4) {}
-export class MerkleWitness8 extends Experimental.MerkleWitness(8) {}
-export class MerkleWitness16 extends Experimental.MerkleWitness(16) {}
-export class MerkleWitness24 extends Experimental.MerkleWitness(24) {}
-export class MerkleWitness32 extends Experimental.MerkleWitness(32) {}
-export class MerkleWitness64 extends Experimental.MerkleWitness(64) {}
-export class MerkleWitness128 extends Experimental.MerkleWitness(128) {}
-export class MerkleWitness256 extends Experimental.MerkleWitness(256) {}
+export class MerkleWitness4 extends MerkleWitness(4) {}
+export class MerkleWitness8 extends MerkleWitness(8) {}
+export class MerkleWitness16 extends MerkleWitness(16) {}
+export class MerkleWitness24 extends MerkleWitness(24) {}
+export class MerkleWitness32 extends MerkleWitness(32) {}
+export class MerkleWitness64 extends MerkleWitness(64) {}
+export class MerkleWitness128 extends MerkleWitness(128) {}
+export class MerkleWitness256 extends MerkleWitness(256) {}
 
 // ==============================================================================
 
@@ -40,7 +41,7 @@ export const assertRootUpdateValid = (
   storedNewRootNumber: Field,
   storedNewRootSignature: Signature
 ) => {
-  let emptyLeaf = Field.fromNumber(0);
+  let emptyLeaf = Field(0);
 
   var currentRoot = root;
   for (var i = 0; i < updates.length; i++) {
@@ -82,7 +83,7 @@ export const get = async (
 ) => {
   const idx2fields = new Map<bigint, Field[]>();
 
-  const tree = new Experimental.MerkleTree(height);
+  const tree = new MerkleTree(height);
   if (tree.getRoot().equals(root).toBoolean()) {
     return idx2fields;
   }
@@ -103,7 +104,7 @@ export const get = async (
   const items: Array<[string, string[]]> = data.items;
   const fieldItems: Array<[string, Field[]]> = items.map(([idx, strs]) => [
     idx,
-    strs.map((s) => Field.fromString(s)),
+    strs.map((s) => Field.fromJSON(s)),
   ]);
 
   fieldItems.forEach(([index, fields]) => {
@@ -125,7 +126,7 @@ export const requestStore = async (
   const items = [];
 
   for (let [idx, fields] of idx2fields) {
-    items.push([idx.toString(), fields.map((f) => f.toString())]);
+    items.push([idx.toString(), fields.map((f) => f.toJSON())]);
   }
 
   const response = await makeRequest(
@@ -144,9 +145,9 @@ export const requestStore = async (
 
   const result: [string, string[]] = data.result;
 
-  const newRootNumber = Field.fromString(result[0]);
-  const newRootSignature = Signature.ofFields(
-    result[1].map((s) => Field.fromString(s))
+  const newRootNumber = Field.fromJSON(result[0]);
+  const newRootSignature = Signature.fromFields(
+    result[1].map((s) => Field.fromJSON(s))
   );
   return [newRootNumber, newRootSignature];
 };
@@ -214,7 +215,7 @@ export function makeRequest(
 // ==============================================================================
 
 export function mapToTree(height: number, idx2fields: Map<bigint, Field[]>) {
-  const tree = new Experimental.MerkleTree(height);
+  const tree = new MerkleTree(height);
   for (let [k, fields] of idx2fields) {
     tree.setLeaf(k, Poseidon.hash(fields));
   }
